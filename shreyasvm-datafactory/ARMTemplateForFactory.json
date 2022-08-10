@@ -1,0 +1,3805 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "shreyasvm-datafactory"
+		},
+		"LinkDataStoreProject_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'LinkDataStoreProject'"
+		},
+		"LinkShreyasDataLake_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'LinkShreyasDataLake'"
+		},
+		"LinkShreyasDataStore_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'LinkShreyasDataStore'"
+		},
+		"LinkShreyasSqlDB_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'LinkShreyasSqlDB'"
+		},
+		"LinkTabletoPool_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'LinkTabletoPool'"
+		},
+		"linkStagingBlob_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'linkStagingBlob'"
+		},
+		"LinkShreyasDataLake_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://shreyasmadl.dfs.core.windows.net/"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/DataFlowBulkCopy')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DataFlowBulkCopy",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "dataflowBulkCopyCustomer",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"sourceCustomer": {},
+									"sinkDatastoreBlob": {}
+								}
+							},
+							"staging": {
+								"linkedService": {
+									"referenceName": "LinkShreyasDataStore",
+									"type": "LinkedServiceReference"
+								},
+								"folderPath": "stagedoutput"
+							},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "ProjectGladiator"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-29T18:32:12Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/dataflowBulkCopyCustomer')]",
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasDataStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipeCopyAdltostoreFalse')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "GetFileList",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "DatasetInShreyasDataStore",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobStorageReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "ForEachTravelList",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "GetFileList",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('GetFileList').output.childItems",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "CopyAFile",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": false,
+												"wildcardFileName": "*",
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ""
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DatasetInShreyasDatalake",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DatasetOutShreyasDataStoreOutputs",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "GetMetaForEach"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-20T10:14:27Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DatasetInShreyasDataStore')]",
+				"[concat(variables('factoryId'), '/datasets/DatasetInShreyasDatalake')]",
+				"[concat(variables('factoryId'), '/datasets/DatasetOutShreyasDataStoreOutputs')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipeCopyAllFilesTrue')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "GetFileList",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "DatasetInShreyasDataStore",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobStorageReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "ForEachTravelList",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "GetFileList",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('GetFileList').output.childItems",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "CopyAFile",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": false,
+												"enablePartitionDiscovery": false,
+												"prefix": {
+													"value": "@{item().name}",
+													"type": "Expression"
+												}
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ""
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DatasetInShreyasDataStore",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DatasetOutShreyasDataStoreOutputs",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "GetMetaForEach"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-20T10:09:29Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DatasetInShreyasDataStore')]",
+				"[concat(variables('factoryId'), '/datasets/DatasetOutShreyasDataStoreOutputs')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipeCopyDbTablesToStore')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "TableList",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "SELECT TABLE_SCHEMA, TABLE_NAME \nFROM information_schema.TABLES \nWHERE TABLE_TYPE = 'BASE TABLE' and TABLE_SCHEMA = 'SalesLT' and TABLE_NAME <> 'Product';",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DatasetInShreyasDB",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "TableList",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('TableList').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "CopyDataDBtoStore",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "SELECT * FROM [@{item().TABLE_SCHEMA}].[@{item().TABLE_NAME}]",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".csv"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DatasetInShreyasDB",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DatasetOutShreyasDataStoreOutputs",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "BulkDBCopy"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-21T03:24:38Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DatasetInShreyasDB')]",
+				"[concat(variables('factoryId'), '/datasets/DatasetOutShreyasDataStoreOutputs')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipeCopyJsonFromDBtoDW')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ForEachCheck",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@pipeline().parameters.ListOfTables",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "CopyDataFromDBtoDW",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "SELECT * FROM [@{item().TABLE_SCHEMA}].[@{item().TABLE_NAME}]",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "SqlDWSink",
+											"allowPolyBase": true,
+											"polyBaseSettings": {
+												"rejectValue": 0,
+												"rejectType": "value",
+												"useTypeDefault": true
+											}
+										},
+										"enableStaging": true,
+										"stagingSettings": {
+											"linkedServiceName": {
+												"referenceName": "LinkDataStoreProject",
+												"type": "LinkedServiceReference"
+											},
+											"path": "stagedoutput"
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ProjectDatasetInAzureSql",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ProjectDatasetOutSqlPool",
+											"type": "DatasetReference",
+											"parameters": {
+												"TABLE_SCHEMA": {
+													"value": "@item().TABLE_SCHEMA",
+													"type": "Expression"
+												},
+												"TABLE_NAME": {
+													"value": "@item().TABLE_NAME",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"ListOfTables": {
+						"type": "array",
+						"defaultValue": [
+							{
+								"TABLE_SCHEMA": "BulkCopy",
+								"TABLE_NAME": "ProductLines"
+							},
+							{
+								"TABLE_SCHEMA": "BulkCopy",
+								"TABLE_NAME": "Customers"
+							},
+							{
+								"TABLE_SCHEMA": "BulkCopy",
+								"TABLE_NAME": "Employees"
+							},
+							{
+								"TABLE_SCHEMA": "BulkCopy",
+								"TABLE_NAME": "Offices"
+							}
+						]
+					}
+				},
+				"folder": {
+					"name": "ProjectGladiator"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-29T16:23:49Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ProjectDatasetInAzureSql')]",
+				"[concat(variables('factoryId'), '/datasets/ProjectDatasetOutSqlPool')]",
+				"[concat(variables('factoryId'), '/linkedServices/LinkDataStoreProject')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipeDBtoPoolWareHouse')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "CopyFromDbtoWarehouse",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "SqlDWSink",
+								"allowCopyCommand": true,
+								"copyCommandSettings": {}
+							},
+							"enableStaging": true,
+							"stagingSettings": {
+								"linkedServiceName": {
+									"referenceName": "linkStagingBlob",
+									"type": "LinkedServiceReference"
+								},
+								"path": "outputs"
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DataInSQLDB",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DatasetOutWarehouse",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "BulkDBCopy"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-21T09:50:37Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DataInSQLDB')]",
+				"[concat(variables('factoryId'), '/datasets/DatasetOutWarehouse')]",
+				"[concat(variables('factoryId'), '/linkedServices/linkStagingBlob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipeLineGenderSplit')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DataFlowGenderSplit",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DataflowLoanDataMaritalAgg",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"SourceLoanData": {},
+									"sinkGen0": {},
+									"sinkGen1": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "DataFlows"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-22T10:11:57Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DataflowLoanDataMaritalAgg')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipeLineWatermarkMoveData')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LookupOldWaterMarkActivity",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "select WatermarkValue from dbo.watermarktable \nwhere tablename=@{pipeline().parameters.tablename}",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DatasetInWatermark",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "CopyfromDBtoStore",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "LookupOldWaterMarkActivity",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "select * from [dbo].[@{pipeline().parameters.tablename}]\nwhere LastModifyDate > '@{activity('LookupOldWaterMarkActivity').output.firstRow.WatermarkValue}'",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DatasetInWatermark",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DatasetOutWatermarkStore",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"tablename": {
+						"type": "string",
+						"defaultValue": "transactions"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-22T03:49:15Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DatasetInWatermark')]",
+				"[concat(variables('factoryId'), '/datasets/DatasetOutWatermarkStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipeLoanDatatoDB')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "CopyLoanDatatoSQLdb",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"wildcardFileName": "*",
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "CustomerID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "CustomerID",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "Loan_ID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Loan_ID",
+											"type": "String",
+											"physicalType": "varchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Gender",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Gender",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "Marital",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Marital",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "Dependents",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Dependents",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "Education",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Education",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "SelfEmplo",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "SelfEmplo",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "ApplIncome",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "ApplIncome",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "CoApplIncome",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "CoApplIncome",
+											"type": "Double",
+											"physicalType": "float"
+										}
+									},
+									{
+										"source": {
+											"name": "LoanAmt",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "LoanAmt",
+											"type": "Double",
+											"physicalType": "float"
+										}
+									},
+									{
+										"source": {
+											"name": "Term",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Term",
+											"type": "Double",
+											"physicalType": "float"
+										}
+									},
+									{
+										"source": {
+											"name": "CreditHistory",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "CreditHistory",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "PropArea",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "PropArea",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "LoanStatus",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "LoanStatus",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "LoanDataInBlobStore",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "LoanDataOutAzureDb",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-29T09:18:21Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/LoanDataInBlobStore')]",
+				"[concat(variables('factoryId'), '/datasets/LoanDataOutAzureDb')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipeLookupOnBulkCopy')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LookupForBulkCopyTables",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.TABLES\nWHERE TABLE_TYPE = 'BASE TABLE' and TABLE_SCHEMA = 'BulkCopy' \nand TABLE_NAME IN ('Customers','ProductLines','Employees','Offices');\n",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "ProjectDatasetInAzureSql",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "PipeDBtoDW",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "LookupForBulkCopyTables",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "PipeCopyJsonFromDBtoDW",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": false,
+							"parameters": {
+								"ListOfTables": {
+									"value": "@activity('LookupForBulkCopyTables').output.value",
+									"type": "Expression"
+								}
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "ProjectGladiator"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-31T09:52:59Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ProjectDatasetInAzureSql')]",
+				"[concat(variables('factoryId'), '/pipelines/PipeCopyJsonFromDBtoDW')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipeMergeFiles')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "CopyAndMergeFiles",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "JsonSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"wildcardFileName": "*.json",
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "JsonReadSettings"
+								}
+							},
+							"sink": {
+								"type": "JsonSink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings",
+									"copyBehavior": "MergeFiles"
+								},
+								"formatSettings": {
+									"type": "JsonWriteSettings"
+								}
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "DatasetInBlobJson",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DatasetOutBlobJson",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "BulkDBCopy"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-21T08:19:10Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DatasetInBlobJson')]",
+				"[concat(variables('factoryId'), '/datasets/DatasetOutBlobJson')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipeParamsAndVars')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "InitializeVariable",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "FIles",
+							"value": [
+								"colors",
+								"inventories",
+								"inventory_parts",
+								"part_categories",
+								"parts",
+								"sets",
+								"themes"
+							]
+						}
+					},
+					{
+						"name": "WhetherLoadFIlesOrNot",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "InitializeVariable",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@pipeline().parameters.LoalAllListData",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "SetNone",
+									"type": "SetVariable",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "ListOfFiles",
+										"value": "No_Files"
+									}
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "AppendInventory",
+									"type": "AppendVariable",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "FIles",
+										"value": "Inventory_Set"
+									}
+								},
+								{
+									"name": "AppendPart_relationship",
+									"description": "",
+									"type": "AppendVariable",
+									"dependsOn": [
+										{
+											"activity": "AppendInventory",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "FIles",
+										"value": "part_relationship"
+									}
+								},
+								{
+									"name": "SetListOfFiles",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "AppendPart_relationship",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "ListOfFiles",
+										"value": {
+											"value": "Load @{length(variables('Files'))} files as: @{join(variables('Files'), ',')}",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"LoalAllListData": {
+						"type": "bool",
+						"defaultValue": false
+					}
+				},
+				"variables": {
+					"FIles": {
+						"type": "Array"
+					},
+					"ListOfFiles": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "ParamsAndVars"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-20T04:53:11Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipeParamsAndVarsDays')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "InitializeVariable",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "weekdays",
+							"value": [
+								"Monday",
+								"Tuesday",
+								"Wednesday",
+								"Thursday"
+							]
+						}
+					},
+					{
+						"name": "WhetherWeekDay",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "InitializeVariable",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@pipeline().parameters.listofalldays",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "SetNone",
+									"type": "SetVariable",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "listofdays",
+										"value": "No_Days"
+									}
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "SetListofDays",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "Append variable1",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "listofdays",
+										"value": {
+											"value": "@{length(variables('weekdays'))} files as: @{join(variables('weekdays'), ',')}",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "Append variable1",
+									"type": "AppendVariable",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "weekdays",
+										"value": "Friday,Saturday,Sunday"
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"listofalldays": {
+						"type": "bool",
+						"defaultValue": false
+					}
+				},
+				"variables": {
+					"weekdays": {
+						"type": "Array"
+					},
+					"listofdays": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "ParamsAndVars"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-20T09:41:56Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipeStoredProcedure')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "StoredDBProcedure",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[usp_write_watermark]",
+							"storedProcedureParameters": {
+								"LastModifiedtime": {
+									"value": {
+										"value": "@pipeline().parameters.LastModifiedtime",
+										"type": "Expression"
+									},
+									"type": "Datetime"
+								},
+								"TableName": {
+									"value": {
+										"value": "@pipeline().parameters.TableName",
+										"type": "Expression"
+									},
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "LinkShreyasSqlDB",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"LastModifiedtime": {
+						"type": "string",
+						"defaultValue": "1/1/2020 12:30:00 AM"
+					},
+					"TableName": {
+						"type": "string",
+						"defaultValue": "data_source_table"
+					}
+				},
+				"folder": {
+					"name": "BulkDBCopy"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-21T08:35:52Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasSqlDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipeTableName')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup1",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "SELECT * from @{pipeline().parameters.Table_Schema}.@{pipeline().parameters.Table_Name}\n",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DatasetInShreyasDB",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"Table_Schema": {
+						"type": "string",
+						"defaultValue": "SalesLT"
+					},
+					"Table_Name": {
+						"type": "string",
+						"defaultValue": "Product"
+					}
+				},
+				"folder": {
+					"name": "BulkDBCopy"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-21T05:22:36Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DatasetInShreyasDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipelineAppIncomeAggregation')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DataFlowAgg",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DataFlowLoanDataAgg",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"IngestLoanData": {},
+									"OutputLoanDataAgg": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "DataFlows"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-22T07:49:50Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DataFlowLoanDataAgg')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipelineEducationSplit')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DataFlowEducationSplit",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DataflowEducationSplit",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"sinkEducation0agg": {},
+									"sinkEducation1agg": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "DataFlows"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-22T10:32:41Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DataflowEducationSplit')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipelineIfElse')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "PipelineIfAndElse",
+						"type": "IfCondition",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@pipeline().parameters.copyfiles",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "Execute Pipeline1",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "PipeCopyAdltostoreFalse",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {}
+									}
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "PipelineTrue",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "PipeCopyAllFilesTrue",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {}
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"copyfiles": {
+						"type": "bool",
+						"defaultValue": true
+					}
+				},
+				"folder": {
+					"name": "GetMetaForEach"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-20T10:14:27Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/PipeCopyAdltostoreFalse')]",
+				"[concat(variables('factoryId'), '/pipelines/PipeCopyAllFilesTrue')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipelineLookupLoanData')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DataFlowLookUp",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "dataflowLookupDataFlow",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"sourceDBPrimaryLoanData": {},
+									"sourceDBSecondaryLoanData1": {},
+									"SinkToDataStore": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "DataFlows"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-22T12:28:35Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/dataflowLookupDataFlow')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PipelineProductAggregation')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ActivityDataflow",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DataFlowFilterAgg",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"IngestProduct": {},
+									"OutputShreyasdbStore": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"folder": {
+					"name": "DataFlows"
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-07-22T05:42:47Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DataFlowFilterAgg')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataInSQLDB')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasSqlDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "CopyFromDBtoPool"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "LoanData_raw"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasSqlDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DatasetInBlobJson')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasDataStore",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "GetMetaForEach"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "data"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasDataStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DatasetInSQLShreyasDBProduct')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasSqlDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "DataFlows"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "ProductID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Name",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ProductNumber",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Color",
+						"type": "nvarchar"
+					},
+					{
+						"name": "StandardCost",
+						"type": "money",
+						"precision": 19,
+						"scale": 4
+					},
+					{
+						"name": "ListPrice",
+						"type": "money",
+						"precision": 19,
+						"scale": 4
+					},
+					{
+						"name": "Size",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Weight",
+						"type": "decimal",
+						"precision": 8,
+						"scale": 2
+					},
+					{
+						"name": "ProductCategoryID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ProductModelID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "SellStartDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					},
+					{
+						"name": "SellEndDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					},
+					{
+						"name": "DiscontinuedDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					},
+					{
+						"name": "ThumbNailPhoto",
+						"type": "varbinary"
+					},
+					{
+						"name": "ThumbnailPhotoFileName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "rowguid",
+						"type": "uniqueidentifier"
+					},
+					{
+						"name": "ModifiedDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					}
+				],
+				"typeProperties": {
+					"schema": "SalesLT",
+					"table": "Product"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasSqlDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DatasetInShreyasDB')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasSqlDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "BulkDBCopy"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasSqlDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DatasetInShreyasDataStore')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasDataStore",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "GetMetaForEach"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "outputs"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasDataStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DatasetInShreyasDatalake')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasDataLake",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "GetMetaForEach"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileSystem": "data"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasDataLake')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DatasetInWatermark')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasSqlDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "WatermarkActivity"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "tid",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "tpname",
+						"type": "varchar"
+					},
+					{
+						"name": "watermarkdate",
+						"type": "date"
+					}
+				],
+				"typeProperties": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasSqlDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DatasetOutBlobJson')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasDataStore",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "GetMetaForEach"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "MergedOutputFile",
+						"container": "jsonoutput"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasDataStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DatasetOutShreyasDataStoreOutputs')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasDataStore",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "GetMetaForEach"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "outputs"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasDataStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DatasetOutShreyasdbProduct')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasDataStore",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "DataFlows"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "Products.csv",
+						"container": "outputs"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "1",
+						"type": "String"
+					},
+					{
+						"name": "Prop_1",
+						"type": "String"
+					},
+					{
+						"name": "Bikes",
+						"type": "String"
+					},
+					{
+						"name": "cfbda25c-df71-47a7-b81b-64ee161aa37c",
+						"type": "String"
+					},
+					{
+						"name": "2002-06-01 00:00:00.0000000",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasDataStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DatasetOutWarehouse')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkTabletoPool",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlDWTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "employee"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkTabletoPool')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DatasetOutWatermarkStore')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasDataStore",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "WatermarkActivity"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "watermark_output",
+						"container": "outputs"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasDataStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LoanDataInBlobStore')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasDataStore",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "LoanData.csv",
+						"container": "data"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasDataStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LoanDataLookUpBlobOut')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasDataStore",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "LookupLoanData"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"folderPath": "Lookup",
+						"container": "outputs"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "Gender",
+						"type": "String"
+					},
+					{
+						"name": "TotalIncome",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasDataStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LoanDataLookupSinkSqlDB')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasSqlDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "LookupLoanData"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "Id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Loan_ID",
+						"type": "varchar"
+					},
+					{
+						"name": "Gender",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Marital",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Dependents",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Education",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "SelfEmplo",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ApplIncome",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "CoApplIncome",
+						"type": "float",
+						"precision": 15
+					},
+					{
+						"name": "LoanAmt",
+						"type": "float",
+						"precision": 15
+					},
+					{
+						"name": "Term",
+						"type": "float",
+						"precision": 15
+					},
+					{
+						"name": "CreditHistory",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "PropArea",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "LoanStatus",
+						"type": "int",
+						"precision": 10
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "LoanData_raw2"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasSqlDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LoanDataMaritalGen0Out')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasDataStore",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"folderPath": "output1",
+						"container": "outputs"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasDataStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LoanDataMaritalGen1Out')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasDataStore",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"folderPath": "output2",
+						"container": "outputs"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasDataStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LoanDataOutAzureDb')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasSqlDB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "Id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Loan_ID",
+						"type": "varchar"
+					},
+					{
+						"name": "Gender",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Marital",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Dependents",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Education",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "SelfEmplo",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ApplIncome",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "CoApplIncome",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "LoanAmt",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Term",
+						"type": "float",
+						"precision": 15
+					},
+					{
+						"name": "CreditHistory",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "PropArea",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "LoanStatus",
+						"type": "int",
+						"precision": 10
+					}
+				],
+				"typeProperties": {
+					"schema": "bulkcopy",
+					"table": "LoanData"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasSqlDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PowerBIDatasetDataStore')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasDataStore",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "PowerBI"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasDataStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PowerBIDatasetSQLDB')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasSqlDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "PowerBI"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasSqlDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PrimaryLoanData')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasSqlDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "LookupLoanData"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "Id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Loan_ID",
+						"type": "varchar"
+					},
+					{
+						"name": "Gender",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Marital",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Dependents",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Education",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "SelfEmplo",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ApplIncome",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "CoApplIncome",
+						"type": "float",
+						"precision": 15
+					},
+					{
+						"name": "LoanAmt",
+						"type": "float",
+						"precision": 15
+					},
+					{
+						"name": "Term",
+						"type": "float",
+						"precision": 15
+					},
+					{
+						"name": "CreditHistory",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "PropArea",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "LoanStatus",
+						"type": "int",
+						"precision": 10
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "LoanData_raw"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasSqlDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ProjectDataFlowInDataWarehouse')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkTabletoPool",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "ProjectGladiator"
+				},
+				"annotations": [],
+				"type": "AzureSqlDWTable",
+				"schema": [
+					{
+						"name": "customerNumber",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "customerName",
+						"type": "varchar"
+					},
+					{
+						"name": "contactLastName",
+						"type": "varchar"
+					},
+					{
+						"name": "contactFirstName",
+						"type": "varchar"
+					},
+					{
+						"name": "phone",
+						"type": "varchar"
+					},
+					{
+						"name": "addressLine1",
+						"type": "varchar"
+					},
+					{
+						"name": "addressLine2",
+						"type": "varchar"
+					},
+					{
+						"name": "city",
+						"type": "varchar"
+					},
+					{
+						"name": "states",
+						"type": "varchar"
+					},
+					{
+						"name": "postalCode",
+						"type": "varchar"
+					},
+					{
+						"name": "country",
+						"type": "varchar"
+					},
+					{
+						"name": "salesRepEmployeeNumber",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "creditLimit",
+						"type": "float",
+						"precision": 15
+					}
+				],
+				"typeProperties": {
+					"schema": "BulkCopy",
+					"table": "Customers"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkTabletoPool')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ProjectDataFlowOutDataStore')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasDataStore",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "ProjectGladiator"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "dataflow"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasDataStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ProjectDatasetBlobDataStore')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkDataStoreProject",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "ProjectGladiator"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "outputs"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkDataStoreProject')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ProjectDatasetInAzureSql')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasSqlDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "ProjectGladiator"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasSqlDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ProjectDatasetOutSqlPool')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkTabletoPool",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"TABLE_SCHEMA": {
+						"type": "string"
+					},
+					"TABLE_NAME": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "ProjectGladiator"
+				},
+				"annotations": [],
+				"type": "AzureSqlDWTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().TABLE_SCHEMA",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().TABLE_NAME",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkTabletoPool')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SecondaryLoanData1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasSqlDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "LookupLoanData"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "Id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Loan_ID",
+						"type": "varchar"
+					},
+					{
+						"name": "Gender",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Marital",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Dependents",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Education",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "SelfEmplo",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ApplIncome",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "CoApplIncome",
+						"type": "float",
+						"precision": 15
+					},
+					{
+						"name": "LoanAmt",
+						"type": "float",
+						"precision": 15
+					},
+					{
+						"name": "Term",
+						"type": "float",
+						"precision": 15
+					},
+					{
+						"name": "CreditHistory",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "PropArea",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "LoanStatus",
+						"type": "int",
+						"precision": 10
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "LoanData_raw1"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LinkShreyasSqlDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LinkDataStoreProject')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('LinkDataStoreProject_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LinkShreyasDataLake')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('LinkShreyasDataLake_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('LinkShreyasDataLake_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LinkShreyasDataStore')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('LinkShreyasDataStore_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LinkShreyasSqlDB')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('LinkShreyasSqlDB_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LinkTabletoPool')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDW",
+				"typeProperties": {
+					"connectionString": "[parameters('LinkTabletoPool_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/linkStagingBlob')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('linkStagingBlob_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataFlowFilterAgg')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DatasetInSQLShreyasDBProduct",
+								"type": "DatasetReference"
+							},
+							"name": "IngestProduct"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DatasetOutShreyasdbProduct",
+								"type": "DatasetReference"
+							},
+							"name": "OutputShreyasdbStore"
+						}
+					],
+					"transformations": [
+						{
+							"name": "FilterForColor"
+						},
+						{
+							"name": "GroupAndAgreeOnColorForPrice"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          ProductID as integer,",
+						"          Name as string,",
+						"          ProductNumber as string,",
+						"          Color as string,",
+						"          StandardCost as decimal(19,4),",
+						"          ListPrice as decimal(19,4),",
+						"          Size as string,",
+						"          Weight as decimal(8,2),",
+						"          ProductCategoryID as integer,",
+						"          ProductModelID as integer,",
+						"          SellStartDate as timestamp,",
+						"          SellEndDate as timestamp,",
+						"          DiscontinuedDate as timestamp,",
+						"          ThumbNailPhoto as binary,",
+						"          ThumbnailPhotoFileName as string,",
+						"          rowguid as string,",
+						"          ModifiedDate as timestamp",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> IngestProduct",
+						"IngestProduct filter(Color==\"Red\"|| Color==\"Black\"|| Color==\"White\" || Color==\"Blue\") ~> FilterForColor",
+						"FilterForColor aggregate(groupBy(Color),",
+						"     ListPrice = avg(ListPrice)) ~> GroupAndAgreeOnColorForPrice",
+						"GroupAndAgreeOnColorForPrice sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          {1} as string,",
+						"          Prop_1 as string,",
+						"          Bikes as string,",
+						"          {cfbda25c-df71-47a7-b81b-64ee161aa37c} as string,",
+						"          {2002-06-01 00:00:00.0000000} as string",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> OutputShreyasdbStore"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DatasetInSQLShreyasDBProduct')]",
+				"[concat(variables('factoryId'), '/datasets/DatasetOutShreyasdbProduct')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataFlowLoanDataAgg')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "LoanDataOutAzureDb",
+								"type": "DatasetReference"
+							},
+							"name": "IngestLoanData"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DatasetOutShreyasDataStoreOutputs",
+								"type": "DatasetReference"
+							},
+							"name": "OutputLoanDataAgg"
+						}
+					],
+					"transformations": [
+						{
+							"name": "AggregateAmount"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          Id as integer,",
+						"          Loan_ID as string,",
+						"          Gender as integer,",
+						"          Marital as integer,",
+						"          Dependents as integer,",
+						"          Education as integer,",
+						"          SelfEmplo as integer,",
+						"          ApplIncome as integer,",
+						"          CoApplIncome as integer,",
+						"          LoanAmt as integer,",
+						"          Term as double,",
+						"          CreditHistory as integer,",
+						"          PropArea as integer,",
+						"          LoanStatus as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> IngestLoanData",
+						"IngestLoanData aggregate(groupBy(Gender),",
+						"     ApplIncome = avg(ApplIncome)) ~> AggregateAmount",
+						"AggregateAmount sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> OutputLoanDataAgg"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/LoanDataOutAzureDb')]",
+				"[concat(variables('factoryId'), '/datasets/DatasetOutShreyasDataStoreOutputs')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataflowEducationSplit')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "LoanDataOutAzureDb",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "LoanDataMaritalGen0Out",
+								"type": "DatasetReference"
+							},
+							"name": "sinkEducation0agg"
+						},
+						{
+							"dataset": {
+								"referenceName": "LoanDataMaritalGen1Out",
+								"type": "DatasetReference"
+							},
+							"name": "sinkEducation1agg"
+						}
+					],
+					"transformations": [
+						{
+							"name": "TotalIncome"
+						},
+						{
+							"name": "split1"
+						},
+						{
+							"name": "aggregateEd0"
+						},
+						{
+							"name": "aggregateEd1"
+						},
+						{
+							"name": "selectRequired"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          Id as integer,",
+						"          Loan_ID as string,",
+						"          Gender as integer,",
+						"          Marital as integer,",
+						"          Dependents as integer,",
+						"          Education as integer,",
+						"          SelfEmplo as integer,",
+						"          ApplIncome as integer,",
+						"          CoApplIncome as integer,",
+						"          LoanAmt as integer,",
+						"          Term as double,",
+						"          CreditHistory as integer,",
+						"          PropArea as integer,",
+						"          LoanStatus as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 derive(TotalIncome = add(ApplIncome,CoApplIncome)) ~> TotalIncome",
+						"selectRequired split(Education==0,",
+						"     Education==1,",
+						"     disjoint: false) ~> split1@(Education0, Education1, EducationAll)",
+						"split1@Education0 aggregate(groupBy(Gender),",
+						"     TotalIncome = avg(TotalIncome)) ~> aggregateEd0",
+						"split1@Education1 aggregate(groupBy(Gender),",
+						"     TotalIncome = avg(TotalIncome)) ~> aggregateEd1",
+						"TotalIncome select(mapColumn(",
+						"          Gender,",
+						"          Education,",
+						"          TotalIncome",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> selectRequired",
+						"aggregateEd0 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          Column_1 as string,",
+						"          Column_2 as string",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> sinkEducation0agg",
+						"aggregateEd1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          Column_1 as string,",
+						"          Column_2 as string",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> sinkEducation1agg"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/LoanDataOutAzureDb')]",
+				"[concat(variables('factoryId'), '/datasets/LoanDataMaritalGen0Out')]",
+				"[concat(variables('factoryId'), '/datasets/LoanDataMaritalGen1Out')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataflowLoanDataMaritalAgg')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "LoanDataOutAzureDb",
+								"type": "DatasetReference"
+							},
+							"name": "SourceLoanData"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "LoanDataMaritalGen0Out",
+								"type": "DatasetReference"
+							},
+							"name": "sinkGen0"
+						},
+						{
+							"dataset": {
+								"referenceName": "LoanDataMaritalGen1Out",
+								"type": "DatasetReference"
+							},
+							"name": "sinkGen1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "DeriveColumnTotalIncome"
+						},
+						{
+							"name": "splitGender"
+						},
+						{
+							"name": "aggregateGen0"
+						},
+						{
+							"name": "aggregateGen1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          Id as integer,",
+						"          Loan_ID as string,",
+						"          Gender as integer,",
+						"          Marital as integer,",
+						"          Dependents as integer,",
+						"          Education as integer,",
+						"          SelfEmplo as integer,",
+						"          ApplIncome as integer,",
+						"          CoApplIncome as integer,",
+						"          LoanAmt as integer,",
+						"          Term as double,",
+						"          CreditHistory as integer,",
+						"          PropArea as integer,",
+						"          LoanStatus as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> SourceLoanData",
+						"SourceLoanData derive(TotalIncome = add(ApplIncome,CoApplIncome)) ~> DeriveColumnTotalIncome",
+						"DeriveColumnTotalIncome split(Gender==0,",
+						"     Gender == 1,",
+						"     disjoint: true) ~> splitGender@(gender0, gender1, AllGender)",
+						"splitGender@gender0 aggregate(groupBy(Marital),",
+						"     TotalIncome = avg(TotalIncome)) ~> aggregateGen0",
+						"splitGender@gender1 aggregate(groupBy(Marital),",
+						"     TotalIncome = avg(TotalIncome)) ~> aggregateGen1",
+						"aggregateGen0 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          Column_1 as string,",
+						"          Column_2 as string",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> sinkGen0",
+						"aggregateGen1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          Column_1 as string,",
+						"          Column_2 as string",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> sinkGen1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/LoanDataOutAzureDb')]",
+				"[concat(variables('factoryId'), '/datasets/LoanDataMaritalGen0Out')]",
+				"[concat(variables('factoryId'), '/datasets/LoanDataMaritalGen1Out')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/dataflowBulkCopyCustomer')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "ProjectDataFlowInDataWarehouse",
+								"type": "DatasetReference"
+							},
+							"name": "sourceCustomer"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "ProjectDataFlowOutDataStore",
+								"type": "DatasetReference"
+							},
+							"name": "sinkDatastoreBlob"
+						}
+					],
+					"transformations": [
+						{
+							"name": "selectRequiredColumns"
+						},
+						{
+							"name": "aggregateByCountry"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          customerNumber as integer,",
+						"          customerName as string,",
+						"          contactLastName as string,",
+						"          contactFirstName as string,",
+						"          phone as string,",
+						"          addressLine1 as string,",
+						"          addressLine2 as string,",
+						"          city as string,",
+						"          states as string,",
+						"          postalCode as string,",
+						"          country as string,",
+						"          salesRepEmployeeNumber as integer,",
+						"          creditLimit as double",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table',",
+						"     staged: true) ~> sourceCustomer",
+						"sourceCustomer select(mapColumn(",
+						"          customerNumber,",
+						"          customerName,",
+						"          country,",
+						"          creditLimit",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> selectRequiredColumns",
+						"selectRequiredColumns aggregate(groupBy(country),",
+						"     creditLimit = avg(creditLimit)) ~> aggregateByCountry",
+						"aggregateByCountry sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     mapColumn(",
+						"          country,",
+						"          creditLimit",
+						"     )) ~> sinkDatastoreBlob"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ProjectDataFlowInDataWarehouse')]",
+				"[concat(variables('factoryId'), '/datasets/ProjectDataFlowOutDataStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/dataflowLookupDataFlow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "PrimaryLoanData",
+								"type": "DatasetReference"
+							},
+							"name": "sourceDBPrimaryLoanData"
+						},
+						{
+							"dataset": {
+								"referenceName": "SecondaryLoanData1",
+								"type": "DatasetReference"
+							},
+							"name": "sourceDBSecondaryLoanData1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "LoanDataLookupSinkSqlDB",
+								"type": "DatasetReference"
+							},
+							"name": "SinkToDataStore"
+						}
+					],
+					"transformations": [
+						{
+							"name": "lookup1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          Id as integer,",
+						"          Loan_ID as string,",
+						"          Gender as integer,",
+						"          Marital as integer,",
+						"          Dependents as integer,",
+						"          Education as integer,",
+						"          SelfEmplo as integer,",
+						"          ApplIncome as integer,",
+						"          CoApplIncome as double,",
+						"          LoanAmt as double,",
+						"          Term as double,",
+						"          CreditHistory as integer,",
+						"          PropArea as integer,",
+						"          LoanStatus as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> sourceDBPrimaryLoanData",
+						"source(output(",
+						"          Id as integer,",
+						"          Loan_ID as string,",
+						"          Gender as integer,",
+						"          Marital as integer,",
+						"          Dependents as integer,",
+						"          Education as integer,",
+						"          SelfEmplo as integer,",
+						"          ApplIncome as integer,",
+						"          CoApplIncome as double,",
+						"          LoanAmt as double,",
+						"          Term as double,",
+						"          CreditHistory as integer,",
+						"          PropArea as integer,",
+						"          LoanStatus as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> sourceDBSecondaryLoanData1",
+						"sourceDBPrimaryLoanData, sourceDBSecondaryLoanData1 lookup(sourceDBPrimaryLoanData@Loan_ID == sourceDBSecondaryLoanData1@Loan_ID,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookup1",
+						"lookup1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          Id as integer,",
+						"          Loan_ID as string,",
+						"          Gender as integer,",
+						"          Marital as integer,",
+						"          Dependents as integer,",
+						"          Education as integer,",
+						"          SelfEmplo as integer,",
+						"          ApplIncome as integer,",
+						"          CoApplIncome as double,",
+						"          LoanAmt as double,",
+						"          Term as double,",
+						"          CreditHistory as integer,",
+						"          PropArea as integer,",
+						"          LoanStatus as integer",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> SinkToDataStore"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/PrimaryLoanData')]",
+				"[concat(variables('factoryId'), '/datasets/SecondaryLoanData1')]",
+				"[concat(variables('factoryId'), '/datasets/LoanDataLookupSinkSqlDB')]"
+			]
+		}
+	]
+}
