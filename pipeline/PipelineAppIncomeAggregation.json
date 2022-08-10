@@ -1,0 +1,37 @@
+{
+	"name": "PipelineAppIncomeAggregation",
+	"properties": {
+		"activities": [
+			{
+				"name": "DataFlowAgg",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "1.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "DataFlowLoanDataAgg",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"folder": {
+			"name": "DataFlows"
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-07-22T07:49:50Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

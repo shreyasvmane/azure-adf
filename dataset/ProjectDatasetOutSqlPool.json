@@ -1,0 +1,34 @@
+{
+	"name": "ProjectDatasetOutSqlPool",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LinkTabletoPool",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"TABLE_SCHEMA": {
+				"type": "string"
+			},
+			"TABLE_NAME": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "ProjectGladiator"
+		},
+		"annotations": [],
+		"type": "AzureSqlDWTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": {
+				"value": "@dataset().TABLE_SCHEMA",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().TABLE_NAME",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

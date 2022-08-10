@@ -1,0 +1,25 @@
+{
+	"name": "PowerBIDatasetDataStore",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LinkShreyasDataStore",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "PowerBI"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

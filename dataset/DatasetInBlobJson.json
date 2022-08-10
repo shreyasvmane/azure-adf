@@ -1,0 +1,22 @@
+{
+	"name": "DatasetInBlobJson",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LinkShreyasDataStore",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "GetMetaForEach"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"container": "data"
+			}
+		},
+		"schema": {}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

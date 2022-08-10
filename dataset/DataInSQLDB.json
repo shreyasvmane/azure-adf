@@ -1,0 +1,20 @@
+{
+	"name": "DataInSQLDB",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LinkShreyasSqlDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "CopyFromDBtoPool"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "LoanData_raw"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

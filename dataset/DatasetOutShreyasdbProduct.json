@@ -1,0 +1,48 @@
+{
+	"name": "DatasetOutShreyasdbProduct",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LinkShreyasDataStore",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "DataFlows"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "Products.csv",
+				"container": "outputs"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "1",
+				"type": "String"
+			},
+			{
+				"name": "Prop_1",
+				"type": "String"
+			},
+			{
+				"name": "Bikes",
+				"type": "String"
+			},
+			{
+				"name": "cfbda25c-df71-47a7-b81b-64ee161aa37c",
+				"type": "String"
+			},
+			{
+				"name": "2002-06-01 00:00:00.0000000",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

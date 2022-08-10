@@ -1,0 +1,73 @@
+{
+	"name": "DataFlowFilterAgg",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DatasetInSQLShreyasDBProduct",
+						"type": "DatasetReference"
+					},
+					"name": "IngestProduct"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DatasetOutShreyasdbProduct",
+						"type": "DatasetReference"
+					},
+					"name": "OutputShreyasdbStore"
+				}
+			],
+			"transformations": [
+				{
+					"name": "FilterForColor"
+				},
+				{
+					"name": "GroupAndAgreeOnColorForPrice"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          ProductID as integer,",
+				"          Name as string,",
+				"          ProductNumber as string,",
+				"          Color as string,",
+				"          StandardCost as decimal(19,4),",
+				"          ListPrice as decimal(19,4),",
+				"          Size as string,",
+				"          Weight as decimal(8,2),",
+				"          ProductCategoryID as integer,",
+				"          ProductModelID as integer,",
+				"          SellStartDate as timestamp,",
+				"          SellEndDate as timestamp,",
+				"          DiscontinuedDate as timestamp,",
+				"          ThumbNailPhoto as binary,",
+				"          ThumbnailPhotoFileName as string,",
+				"          rowguid as string,",
+				"          ModifiedDate as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> IngestProduct",
+				"IngestProduct filter(Color==\"Red\"|| Color==\"Black\"|| Color==\"White\" || Color==\"Blue\") ~> FilterForColor",
+				"FilterForColor aggregate(groupBy(Color),",
+				"     ListPrice = avg(ListPrice)) ~> GroupAndAgreeOnColorForPrice",
+				"GroupAndAgreeOnColorForPrice sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          {1} as string,",
+				"          Prop_1 as string,",
+				"          Bikes as string,",
+				"          {cfbda25c-df71-47a7-b81b-64ee161aa37c} as string,",
+				"          {2002-06-01 00:00:00.0000000} as string",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> OutputShreyasdbStore"
+			]
+		}
+	}
+}

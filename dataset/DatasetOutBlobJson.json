@@ -1,0 +1,23 @@
+{
+	"name": "DatasetOutBlobJson",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LinkShreyasDataStore",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "GetMetaForEach"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "MergedOutputFile",
+				"container": "jsonoutput"
+			}
+		},
+		"schema": {}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

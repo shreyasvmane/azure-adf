@@ -1,0 +1,16 @@
+{
+	"name": "ProjectDatasetInAzureSql",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LinkShreyasSqlDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "ProjectGladiator"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

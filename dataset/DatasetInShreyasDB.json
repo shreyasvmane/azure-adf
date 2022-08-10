@@ -1,0 +1,16 @@
+{
+	"name": "DatasetInShreyasDB",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LinkShreyasSqlDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "BulkDBCopy"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,126 @@
+{
+	"name": "PipeParamsAndVars",
+	"properties": {
+		"activities": [
+			{
+				"name": "InitializeVariable",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "FIles",
+					"value": [
+						"colors",
+						"inventories",
+						"inventory_parts",
+						"part_categories",
+						"parts",
+						"sets",
+						"themes"
+					]
+				}
+			},
+			{
+				"name": "WhetherLoadFIlesOrNot",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "InitializeVariable",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@pipeline().parameters.LoalAllListData",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "SetNone",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "ListOfFiles",
+								"value": "No_Files"
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "AppendInventory",
+							"type": "AppendVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "FIles",
+								"value": "Inventory_Set"
+							}
+						},
+						{
+							"name": "AppendPart_relationship",
+							"description": "",
+							"type": "AppendVariable",
+							"dependsOn": [
+								{
+									"activity": "AppendInventory",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "FIles",
+								"value": "part_relationship"
+							}
+						},
+						{
+							"name": "SetListOfFiles",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "AppendPart_relationship",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "ListOfFiles",
+								"value": {
+									"value": "Load @{length(variables('Files'))} files as: @{join(variables('Files'), ',')}",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"LoalAllListData": {
+				"type": "bool",
+				"defaultValue": false
+			}
+		},
+		"variables": {
+			"FIles": {
+				"type": "Array"
+			},
+			"ListOfFiles": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "ParamsAndVars"
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-07-20T04:53:11Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

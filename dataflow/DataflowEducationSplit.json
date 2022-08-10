@@ -1,0 +1,103 @@
+{
+	"name": "DataflowEducationSplit",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "LoanDataOutAzureDb",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "LoanDataMaritalGen0Out",
+						"type": "DatasetReference"
+					},
+					"name": "sinkEducation0agg"
+				},
+				{
+					"dataset": {
+						"referenceName": "LoanDataMaritalGen1Out",
+						"type": "DatasetReference"
+					},
+					"name": "sinkEducation1agg"
+				}
+			],
+			"transformations": [
+				{
+					"name": "TotalIncome"
+				},
+				{
+					"name": "split1"
+				},
+				{
+					"name": "aggregateEd0"
+				},
+				{
+					"name": "aggregateEd1"
+				},
+				{
+					"name": "selectRequired"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Id as integer,",
+				"          Loan_ID as string,",
+				"          Gender as integer,",
+				"          Marital as integer,",
+				"          Dependents as integer,",
+				"          Education as integer,",
+				"          SelfEmplo as integer,",
+				"          ApplIncome as integer,",
+				"          CoApplIncome as integer,",
+				"          LoanAmt as integer,",
+				"          Term as double,",
+				"          CreditHistory as integer,",
+				"          PropArea as integer,",
+				"          LoanStatus as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source1",
+				"source1 derive(TotalIncome = add(ApplIncome,CoApplIncome)) ~> TotalIncome",
+				"selectRequired split(Education==0,",
+				"     Education==1,",
+				"     disjoint: false) ~> split1@(Education0, Education1, EducationAll)",
+				"split1@Education0 aggregate(groupBy(Gender),",
+				"     TotalIncome = avg(TotalIncome)) ~> aggregateEd0",
+				"split1@Education1 aggregate(groupBy(Gender),",
+				"     TotalIncome = avg(TotalIncome)) ~> aggregateEd1",
+				"TotalIncome select(mapColumn(",
+				"          Gender,",
+				"          Education,",
+				"          TotalIncome",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectRequired",
+				"aggregateEd0 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          Column_1 as string,",
+				"          Column_2 as string",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkEducation0agg",
+				"aggregateEd1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          Column_1 as string,",
+				"          Column_2 as string",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkEducation1agg"
+			]
+		}
+	}
+}

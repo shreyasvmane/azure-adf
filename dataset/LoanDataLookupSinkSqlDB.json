@@ -1,0 +1,90 @@
+{
+	"name": "LoanDataLookupSinkSqlDB",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LinkShreyasSqlDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "LookupLoanData"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "Id",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Loan_ID",
+				"type": "varchar"
+			},
+			{
+				"name": "Gender",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Marital",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Dependents",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Education",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "SelfEmplo",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "ApplIncome",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "CoApplIncome",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "LoanAmt",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "Term",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "CreditHistory",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "PropArea",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "LoanStatus",
+				"type": "int",
+				"precision": 10
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "LoanData_raw2"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

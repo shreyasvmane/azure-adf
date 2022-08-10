@@ -1,0 +1,233 @@
+{
+	"name": "PipeLoanDatatoDB",
+	"properties": {
+		"activities": [
+			{
+				"name": "CopyLoanDatatoSQLdb",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"wildcardFileName": "*",
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "CustomerID",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "CustomerID",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "Loan_ID",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Loan_ID",
+									"type": "String",
+									"physicalType": "varchar"
+								}
+							},
+							{
+								"source": {
+									"name": "Gender",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Gender",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "Marital",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Marital",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "Dependents",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Dependents",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "Education",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Education",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "SelfEmplo",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "SelfEmplo",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "ApplIncome",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "ApplIncome",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "CoApplIncome",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "CoApplIncome",
+									"type": "Double",
+									"physicalType": "float"
+								}
+							},
+							{
+								"source": {
+									"name": "LoanAmt",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "LoanAmt",
+									"type": "Double",
+									"physicalType": "float"
+								}
+							},
+							{
+								"source": {
+									"name": "Term",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Term",
+									"type": "Double",
+									"physicalType": "float"
+								}
+							},
+							{
+								"source": {
+									"name": "CreditHistory",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "CreditHistory",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "PropArea",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "PropArea",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							},
+							{
+								"source": {
+									"name": "LoanStatus",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "LoanStatus",
+									"type": "Int32",
+									"physicalType": "int"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "LoanDataInBlobStore",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "LoanDataOutAzureDb",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2022-07-29T09:18:21Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

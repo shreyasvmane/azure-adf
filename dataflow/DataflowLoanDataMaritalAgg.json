@@ -1,0 +1,93 @@
+{
+	"name": "DataflowLoanDataMaritalAgg",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "LoanDataOutAzureDb",
+						"type": "DatasetReference"
+					},
+					"name": "SourceLoanData"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "LoanDataMaritalGen0Out",
+						"type": "DatasetReference"
+					},
+					"name": "sinkGen0"
+				},
+				{
+					"dataset": {
+						"referenceName": "LoanDataMaritalGen1Out",
+						"type": "DatasetReference"
+					},
+					"name": "sinkGen1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DeriveColumnTotalIncome"
+				},
+				{
+					"name": "splitGender"
+				},
+				{
+					"name": "aggregateGen0"
+				},
+				{
+					"name": "aggregateGen1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Id as integer,",
+				"          Loan_ID as string,",
+				"          Gender as integer,",
+				"          Marital as integer,",
+				"          Dependents as integer,",
+				"          Education as integer,",
+				"          SelfEmplo as integer,",
+				"          ApplIncome as integer,",
+				"          CoApplIncome as integer,",
+				"          LoanAmt as integer,",
+				"          Term as double,",
+				"          CreditHistory as integer,",
+				"          PropArea as integer,",
+				"          LoanStatus as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> SourceLoanData",
+				"SourceLoanData derive(TotalIncome = add(ApplIncome,CoApplIncome)) ~> DeriveColumnTotalIncome",
+				"DeriveColumnTotalIncome split(Gender==0,",
+				"     Gender == 1,",
+				"     disjoint: true) ~> splitGender@(gender0, gender1, AllGender)",
+				"splitGender@gender0 aggregate(groupBy(Marital),",
+				"     TotalIncome = avg(TotalIncome)) ~> aggregateGen0",
+				"splitGender@gender1 aggregate(groupBy(Marital),",
+				"     TotalIncome = avg(TotalIncome)) ~> aggregateGen1",
+				"aggregateGen0 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          Column_1 as string,",
+				"          Column_2 as string",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkGen0",
+				"aggregateGen1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          Column_1 as string,",
+				"          Column_2 as string",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkGen1"
+			]
+		}
+	}
+}

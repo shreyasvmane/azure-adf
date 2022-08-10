@@ -1,0 +1,17 @@
+{
+	"name": "DatasetOutWarehouse",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LinkTabletoPool",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlDWTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "employee"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

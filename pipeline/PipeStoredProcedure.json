@@ -1,0 +1,59 @@
+{
+	"name": "PipeStoredProcedure",
+	"properties": {
+		"activities": [
+			{
+				"name": "StoredDBProcedure",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[usp_write_watermark]",
+					"storedProcedureParameters": {
+						"LastModifiedtime": {
+							"value": {
+								"value": "@pipeline().parameters.LastModifiedtime",
+								"type": "Expression"
+							},
+							"type": "Datetime"
+						},
+						"TableName": {
+							"value": {
+								"value": "@pipeline().parameters.TableName",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LinkShreyasSqlDB",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"LastModifiedtime": {
+				"type": "string",
+				"defaultValue": "1/1/2020 12:30:00 AM"
+			},
+			"TableName": {
+				"type": "string",
+				"defaultValue": "data_source_table"
+			}
+		},
+		"folder": {
+			"name": "BulkDBCopy"
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-07-21T08:35:52Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

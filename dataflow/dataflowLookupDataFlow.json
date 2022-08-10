@@ -1,0 +1,110 @@
+{
+	"name": "dataflowLookupDataFlow",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "PrimaryLoanData",
+						"type": "DatasetReference"
+					},
+					"name": "sourceDBPrimaryLoanData"
+				},
+				{
+					"dataset": {
+						"referenceName": "SecondaryLoanData1",
+						"type": "DatasetReference"
+					},
+					"name": "sourceDBSecondaryLoanData1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "LoanDataLookupSinkSqlDB",
+						"type": "DatasetReference"
+					},
+					"name": "SinkToDataStore"
+				}
+			],
+			"transformations": [
+				{
+					"name": "lookup1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Id as integer,",
+				"          Loan_ID as string,",
+				"          Gender as integer,",
+				"          Marital as integer,",
+				"          Dependents as integer,",
+				"          Education as integer,",
+				"          SelfEmplo as integer,",
+				"          ApplIncome as integer,",
+				"          CoApplIncome as double,",
+				"          LoanAmt as double,",
+				"          Term as double,",
+				"          CreditHistory as integer,",
+				"          PropArea as integer,",
+				"          LoanStatus as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> sourceDBPrimaryLoanData",
+				"source(output(",
+				"          Id as integer,",
+				"          Loan_ID as string,",
+				"          Gender as integer,",
+				"          Marital as integer,",
+				"          Dependents as integer,",
+				"          Education as integer,",
+				"          SelfEmplo as integer,",
+				"          ApplIncome as integer,",
+				"          CoApplIncome as double,",
+				"          LoanAmt as double,",
+				"          Term as double,",
+				"          CreditHistory as integer,",
+				"          PropArea as integer,",
+				"          LoanStatus as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> sourceDBSecondaryLoanData1",
+				"sourceDBPrimaryLoanData, sourceDBSecondaryLoanData1 lookup(sourceDBPrimaryLoanData@Loan_ID == sourceDBSecondaryLoanData1@Loan_ID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookup1",
+				"lookup1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          Id as integer,",
+				"          Loan_ID as string,",
+				"          Gender as integer,",
+				"          Marital as integer,",
+				"          Dependents as integer,",
+				"          Education as integer,",
+				"          SelfEmplo as integer,",
+				"          ApplIncome as integer,",
+				"          CoApplIncome as double,",
+				"          LoanAmt as double,",
+				"          Term as double,",
+				"          CreditHistory as integer,",
+				"          PropArea as integer,",
+				"          LoanStatus as integer",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> SinkToDataStore"
+			]
+		}
+	}
+}

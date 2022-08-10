@@ -1,0 +1,30 @@
+{
+	"name": "DatasetInWatermark",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LinkShreyasSqlDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "WatermarkActivity"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "tid",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "tpname",
+				"type": "varchar"
+			},
+			{
+				"name": "watermarkdate",
+				"type": "date"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

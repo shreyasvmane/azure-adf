@@ -1,0 +1,37 @@
+{
+	"name": "PipelineEducationSplit",
+	"properties": {
+		"activities": [
+			{
+				"name": "DataFlowEducationSplit",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "1.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "DataflowEducationSplit",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"folder": {
+			"name": "DataFlows"
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-07-22T10:32:41Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

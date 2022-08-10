@@ -1,0 +1,44 @@
+{
+	"name": "DataFlowBulkCopy",
+	"properties": {
+		"activities": [
+			{
+				"name": "DataFlowBulkCopy",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "1.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "dataflowBulkCopyCustomer",
+						"type": "DataFlowReference"
+					},
+					"staging": {
+						"linkedService": {
+							"referenceName": "LinkShreyasDataStore",
+							"type": "LinkedServiceReference"
+						},
+						"folderPath": "stagedoutput"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"folder": {
+			"name": "ProjectGladiator"
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-07-29T18:32:12Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

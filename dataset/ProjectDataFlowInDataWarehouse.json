@@ -1,0 +1,76 @@
+{
+	"name": "ProjectDataFlowInDataWarehouse",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LinkTabletoPool",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "ProjectGladiator"
+		},
+		"annotations": [],
+		"type": "AzureSqlDWTable",
+		"schema": [
+			{
+				"name": "customerNumber",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "customerName",
+				"type": "varchar"
+			},
+			{
+				"name": "contactLastName",
+				"type": "varchar"
+			},
+			{
+				"name": "contactFirstName",
+				"type": "varchar"
+			},
+			{
+				"name": "phone",
+				"type": "varchar"
+			},
+			{
+				"name": "addressLine1",
+				"type": "varchar"
+			},
+			{
+				"name": "addressLine2",
+				"type": "varchar"
+			},
+			{
+				"name": "city",
+				"type": "varchar"
+			},
+			{
+				"name": "states",
+				"type": "varchar"
+			},
+			{
+				"name": "postalCode",
+				"type": "varchar"
+			},
+			{
+				"name": "country",
+				"type": "varchar"
+			},
+			{
+				"name": "salesRepEmployeeNumber",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "creditLimit",
+				"type": "float",
+				"precision": 15
+			}
+		],
+		"typeProperties": {
+			"schema": "BulkCopy",
+			"table": "Customers"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

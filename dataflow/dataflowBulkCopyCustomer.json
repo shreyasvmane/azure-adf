@@ -1,0 +1,74 @@
+{
+	"name": "dataflowBulkCopyCustomer",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ProjectDataFlowInDataWarehouse",
+						"type": "DatasetReference"
+					},
+					"name": "sourceCustomer"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ProjectDataFlowOutDataStore",
+						"type": "DatasetReference"
+					},
+					"name": "sinkDatastoreBlob"
+				}
+			],
+			"transformations": [
+				{
+					"name": "selectRequiredColumns"
+				},
+				{
+					"name": "aggregateByCountry"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          customerNumber as integer,",
+				"          customerName as string,",
+				"          contactLastName as string,",
+				"          contactFirstName as string,",
+				"          phone as string,",
+				"          addressLine1 as string,",
+				"          addressLine2 as string,",
+				"          city as string,",
+				"          states as string,",
+				"          postalCode as string,",
+				"          country as string,",
+				"          salesRepEmployeeNumber as integer,",
+				"          creditLimit as double",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table',",
+				"     staged: true) ~> sourceCustomer",
+				"sourceCustomer select(mapColumn(",
+				"          customerNumber,",
+				"          customerName,",
+				"          country,",
+				"          creditLimit",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectRequiredColumns",
+				"selectRequiredColumns aggregate(groupBy(country),",
+				"     creditLimit = avg(creditLimit)) ~> aggregateByCountry",
+				"aggregateByCountry sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     mapColumn(",
+				"          country,",
+				"          creditLimit",
+				"     )) ~> sinkDatastoreBlob"
+			]
+		}
+	}
+}

@@ -1,0 +1,59 @@
+{
+	"name": "DataFlowLoanDataAgg",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "LoanDataOutAzureDb",
+						"type": "DatasetReference"
+					},
+					"name": "IngestLoanData"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DatasetOutShreyasDataStoreOutputs",
+						"type": "DatasetReference"
+					},
+					"name": "OutputLoanDataAgg"
+				}
+			],
+			"transformations": [
+				{
+					"name": "AggregateAmount"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Id as integer,",
+				"          Loan_ID as string,",
+				"          Gender as integer,",
+				"          Marital as integer,",
+				"          Dependents as integer,",
+				"          Education as integer,",
+				"          SelfEmplo as integer,",
+				"          ApplIncome as integer,",
+				"          CoApplIncome as integer,",
+				"          LoanAmt as integer,",
+				"          Term as double,",
+				"          CreditHistory as integer,",
+				"          PropArea as integer,",
+				"          LoanStatus as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> IngestLoanData",
+				"IngestLoanData aggregate(groupBy(Gender),",
+				"     ApplIncome = avg(ApplIncome)) ~> AggregateAmount",
+				"AggregateAmount sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> OutputLoanDataAgg"
+			]
+		}
+	}
+}

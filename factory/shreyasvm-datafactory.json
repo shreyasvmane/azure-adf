@@ -1,0 +1,9 @@
+{
+	"name": "shreyasvm-datafactory",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "dcea1a60-7d53-445b-a8bd-9d10f42a39ba",
+		"tenantId": "02aa9fc1-18bc-4798-a020-e01c854dd434"
+	}
+}
